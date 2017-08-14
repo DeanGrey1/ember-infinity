@@ -4,79 +4,79 @@ import { emberDataVersionIs } from 'ember-version-is';
 const keys = Object.keys || Ember.keys;
 const assign = Ember.assign || Ember.merge;
 /**
-  The Ember Infinity Route Mixin enables an application route to load paginated
-  records for the route `model` as triggered by the controller (or Infinity Loader
-  component).
+ The Ember Infinity Route Mixin enables an application route to load paginated
+ records for the route `model` as triggered by the controller (or Infinity Loader
+ component).
 
-  @class RouteMixin
-  @namespace EmberInfinity
-  @module ember-infinity/mixins/route
-  @extends Ember.Mixin
-*/
+ @class RouteMixin
+ @namespace EmberInfinity
+ @module ember-infinity/mixins/route
+ @extends Ember.Mixin
+ */
 const RouteMixin = Ember.Mixin.create({
 
   /**
-    @private
-    @property _perPage
-    @type Integer
-    @default 25
-  */
+   @private
+   @property _perPage
+   @type Integer
+   @default 25
+   */
   _perPage: 25,
 
   /**
-    @private
-    @property currentPage
-    @type Integer
-    @default 0
-  */
+   @private
+   @property currentPage
+   @type Integer
+   @default 0
+   */
   currentPage: 0,
 
   /**
-    @private
-    @property _extraParams
-    @type Object
-    @default {}
-  */
+   @private
+   @property _extraParams
+   @type Object
+   @default {}
+   */
   _extraParams: {},
 
   /**
-    @private
-    @property _boundParams
-    @type Object
-    @default {}
-  */
+   @private
+   @property _boundParams
+   @type Object
+   @default {}
+   */
   _boundParams: {},
 
   /**
-    @private
-    @property _loadingMore
-    @type Boolean
-    @default false
-  */
+   @private
+   @property _loadingMore
+   @type Boolean
+   @default false
+   */
   _loadingMore: false,
 
   /**
-    @private
-    @property _totalPages
-    @type Integer
-    @default 0
-  */
+   @private
+   @property _totalPages
+   @type Integer
+   @default 0
+   */
   _totalPages: 0,
 
   /**
-    @private
-    @property _infinityModelName
-    @type String
-    @default null
-  */
+   @private
+   @property _infinityModelName
+   @type String
+   @default null
+   */
   _infinityModelName: null,
 
   /**
-    @private
-    @property _modelPath
-    @type String
-    @default 'controller.model'
-  */
+   @private
+   @property _modelPath
+   @type String
+   @default 'controller.model'
+   */
   _modelPath: 'controller.model',
 
   /**
@@ -103,6 +103,13 @@ const RouteMixin = Ember.Mixin.create({
    */
   totalPagesParam: 'meta.total_pages',
 
+  /**
+   * Method used to add new objects
+   * @type {String}
+   * @default "pushObjects"
+   */
+  _newObjectsAddMethod: 'pushObjects',
+
   actions: {
     infinityLoad(infinityModel) {
       if (infinityModel === this._infinityModel()) {
@@ -125,11 +132,11 @@ const RouteMixin = Ember.Mixin.create({
   _firstPageLoaded: false,
 
   /**
-    @private
-    @property _canLoadMore
-    @type Boolean
-    @default false
-  */
+   @private
+   @property _canLoadMore
+   @type Boolean
+   @default false
+   */
   _canLoadMore: Ember.computed('_totalPages', 'currentPage', function() {
     const totalPages  = this.get('_totalPages');
     const currentPage = this.get('currentPage');
@@ -141,7 +148,7 @@ const RouteMixin = Ember.Mixin.create({
    @private
    @method _infinityModel
    @return {DS.RecordArray} the model
-  */
+   */
   _infinityModel() {
     return this.get(this.get('_modelPath'));
   },
@@ -161,15 +168,15 @@ const RouteMixin = Ember.Mixin.create({
   },
 
   /**
-    Use the infinityModel method in the place of `this.store.find('model')` to
-    initialize the Infinity Model for your route.
+   Use the infinityModel method in the place of `this.store.find('model')` to
+   initialize the Infinity Model for your route.
 
-    @method infinityModel
-    @param {String} modelName The name of the model.
-    @param {Object} options Optional, the perPage and startingPage to load from.
-    @param {Object} boundParams Optional, any route properties to be included as additional params.
-    @return {Ember.RSVP.Promise}
-  */
+   @method infinityModel
+   @param {String} modelName The name of the model.
+   @param {Object} options Optional, the perPage and startingPage to load from.
+   @param {Object} boundParams Optional, any route properties to be included as additional params.
+   @return {Ember.RSVP.Promise}
+   */
   infinityModel(modelName, options, boundParams) {
     if (emberDataVersionIs('lessThan', '1.13.0')) {
       this.set('_storeFindMethod', 'find');
@@ -180,20 +187,23 @@ const RouteMixin = Ember.Mixin.create({
     this._ensureCompatibility();
 
     options = options ? assign({}, options) : {};
-    const startingPage = options.startingPage === undefined ? 0 : options.startingPage-1;
+    const startingPage           = options.startingPage === undefined ? 0 : options.startingPage-1;
 
-    const perPage      = options.perPage || this.get('_perPage');
-    const modelPath    = options.modelPath || this.get('_modelPath');
+    const perPage                = options.perPage || this.get('_perPage');
+    const modelPath              = options.modelPath || this.get('_modelPath');
+    const newObjectsAddMethod    = options.newObjectsAddMethod || this.get('_newObjectsAddMethod');
 
     delete options.startingPage;
     delete options.perPage;
     delete options.modelPath;
+    delete options.newObjectsAddMethod;
 
     this.setProperties({
       currentPage: startingPage,
       _firstPageLoaded: false,
       _perPage: perPage,
       _modelPath: modelPath,
+      _newObjectsAddMethod: newObjectsAddMethod,
       _extraParams: options
     });
 
@@ -210,7 +220,7 @@ const RouteMixin = Ember.Mixin.create({
    @method _afterInfinityModel
    @param {Function} infinityModelPromise The resolved result of the Ember store find method. Passed in automatically.
    @return {Ember.RSVP.Promise}
-  */
+   */
   _afterInfinityModel(_this) {
     return function(infinityModelPromiseResult) {
       if (typeof _this.afterInfinityModel === 'function') {
@@ -249,14 +259,14 @@ const RouteMixin = Ember.Mixin.create({
     this.set('_loadingMore', true);
 
     return this._requestNextPage()
-      .then((newObjects) => {
+        .then((newObjects) => {
         this._nextPageLoaded(newObjects);
 
-        return newObjects;
-      })
-      .finally(() => {
-        this.set('_loadingMore', false);
-      });
+    return newObjects;
+  })
+  .finally(() => {
+      this.set('_loadingMore', false);
+  });
   },
 
   /**
@@ -313,7 +323,9 @@ const RouteMixin = Ember.Mixin.create({
 
   _doUpdate(newObjects) {
     let infinityModel = this._infinityModel();
-    return infinityModel.pushObjects(newObjects.get('content'));
+    let newObjectsAddMethod = this.get('_newObjectsAddMethod') || 'pushObjects';
+
+    return infinityModel[newObjectsAddMethod](newObjects.get('content'));
   },
 
   /**
@@ -331,13 +343,13 @@ const RouteMixin = Ember.Mixin.create({
 
     if (this.get('_firstPageLoaded')) {
       if (typeof this.updateInfinityModel === 'function' &&
-          (this.updateInfinityModel !==
-           Ember.Object.extend(RouteMixin).create().updateInfinityModel)) {
+        (this.updateInfinityModel !==
+        Ember.Object.extend(RouteMixin).create().updateInfinityModel)) {
         Ember.deprecate("EmberInfinity.updateInfinityModel is deprecated. "+
-                        "Please use EmberInfinity.afterInfinityModel.",
-                        false,
-                        {id: 'ember-infinity.updateInfinityModel', until: '2.1'}
-                       );
+          "Please use EmberInfinity.afterInfinityModel.",
+          false,
+          {id: 'ember-infinity.updateInfinityModel', until: '2.1'}
+        );
 
         infinityModel = this.updateInfinityModel(newObjects);
       } else {
